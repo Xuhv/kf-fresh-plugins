@@ -1,15 +1,16 @@
 # @kf/fresh-plugins
 
+![deno.land/x](https://img.shields.io/github/v/tag/Xuhv/kf-fresh-plugins?label=deno.land/x&logo=deno)
+
 Plugins for [fresh](https://fresh.deno.dev).
 
 #### [cssModules](./plugins/cssModules.ts)
 
-**NOTE:**
-1. Currently, it can't scan directory recursively.
-2. I have no idea to build modules when start dev server, so run `deno task build` before `deno task start`. 
+**NOTE:** I have no idea to build modules when start dev server, so run
+`deno task build` before `deno task start`.
 
-It generate `[name].styles.ts` file from css modules file, so import classes
-from it instead of the css file.
+It generate `[name].styles.ts` file from `[name].modules.css` file, so import
+classes from it instead of the css file.
 
 ```ts
 import type { JSX } from "preact";

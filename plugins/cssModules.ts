@@ -1,5 +1,6 @@
 import { type CSSModuleExports, Features, transform } from "npm:lightningcss@1.24.1"
 import type { Plugin, PluginMiddleware } from "$fresh/server.ts"
+import { mightFail } from "@might/fail"
 
 async function parseStyles(url: string): Promise<{ code: Uint8Array; exports: void | CSSModuleExports }> {
   const { code, exports } = await Deno.readFile(url).then(x =>
@@ -26,21 +27,32 @@ function mergeUint8Arrays(arr: Uint8Array[]): Uint8Array {
   return merged
 }
 
-function modName(s: string) {
+function mod(base: string, p: string): [name: string, parent: string] {
+  const parts = p.split("/")
   // biome-ignore lint/style/noNonNullAssertion: <explanation>
-  return s
-    .split("/")
-    .pop()!
-    .replace(/(\.module\.css|\.css)$/, "")
+  const n = parts.pop()!.replace(/\.module\.css$/, "")
+  const parent = parts.slice(base.split("/").length).join("/")
+  return [n, parent]
 }
 
-async function produce(url: string, tsOutDir: string, cssOutDir?: string) {
+async function ensureDir(dir: string) {
+  const { error } = await mightFail(Deno.readDir(dir)[Symbol.asyncIterator]().next())
+  if (error) await Deno.mkdir(dir, { recursive: true })
+}
+
+async function produce(watchDir: string, url: string, tsOutDir: string, cssOutDir?: string) {
   const { exports: _exports, code } = await parseStyles(url)
   // biome-ignore lint/style/noNonNullAssertion: <explanation>
   const exports = Object.fromEntries(Object.entries(_exports!).map(([k, v]) => [k, v.name]))
-  const n = modName(url)
-  await Deno.writeTextFile(`${tsOutDir}/${n}.styles.ts`, `export default ${JSON.stringify(exports)}`)
-  if (cssOutDir) await Deno.writeFile(`${cssOutDir}/${n}.css`, code)
+  const [n, parent] = mod(watchDir, url)
+
+  await ensureDir(joinPath(tsOutDir, parent))
+  await Deno.writeTextFile(joinPath(tsOutDir, parent, `${n}.styles.ts`), `export default ${JSON.stringify(exports)}`)
+
+  if (cssOutDir) {
+    await ensureDir(joinPath(cssOutDir, parent))
+    await Deno.writeFile(joinPath(cssOutDir, parent, `${n}.css`), code)
+  }
 }
 
 function joinPath(...parts: string[]) {
@@ -50,9 +62,6 @@ function joinPath(...parts: string[]) {
 let watcher: Deno.FsWatcher | null = null
 
 type CssModulesPluginOptions = {
-  /**
-   * not recursive
-   */
   watchDir: string
   /**
    * where `[name].styles.ts` will be generated
@@ -68,6 +77,9 @@ type CssModulesPluginOptions = {
   cssOutFile?: string
 }
 
+/**
+ * watch all [name].module.css files
+ */
 export function cssModules({ tsOutDir, watchDir, cssOutFile, cssOutDir }: CssModulesPluginOptions): Plugin {
   if (!cssOutFile === !cssOutDir) throw new Error("cssOutFile and cssOutDir can't be undefined or not undefined at the same time")
 
@@ -97,7 +109,7 @@ export function cssModules({ tsOutDir, watchDir, cssOutFile, cssOutDir }: CssMod
 
   async function produceModules() {
     if (cssOutFile) await produceStylesheet(cssOutFile)
-    for (const url of list) await produce(url, tsOutDir, cssOutDir)
+    for (const url of list) await produce(watchDir, url, tsOutDir, cssOutDir)
   }
 
   const cssModulesMiddleware: PluginMiddleware = {
@@ -125,19 +137,18 @@ export function cssModules({ tsOutDir, watchDir, cssOutFile, cssOutDir }: CssMod
 
   async function startWatch(watchDir: string, tsOutDir: string, cssOutDir?: string): Promise<void> {
     watcher?.close()
-    watcher = Deno.watchFs(watchDir, { recursive: false })
+    watcher = Deno.watchFs(watchDir)
 
     for await (const event of watcher) {
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
-      const n = event.paths[0].split("/").pop()!
-      if (!n.endsWith(".css")) continue
+      const p = event.paths[0]
+      if (!p.endsWith(".module.css")) continue
 
       if (event.kind === "create" || event.kind === "modify") {
-        await produce(joinPath(watchDir, n), tsOutDir, cssOutDir)
+        await produce(watchDir, p, tsOutDir, cssOutDir)
       } else if (event.kind === "remove") {
-        const m = modName(n)
-        await Deno.remove(joinPath(tsOutDir, `${m}.styles.ts`))
-        if (cssOutDir) await Deno.remove(joinPath(cssOutDir, `${m}.css`))
+        const [n, parent] = mod(watchDir, p)
+        await mightFail(Deno.remove(joinPath(tsOutDir, parent, `${n}.styles.ts`)))
+        if (cssOutDir) await mightFail(Deno.remove(joinPath(cssOutDir, parent, `${n}.css`)))
       }
     }
   }
