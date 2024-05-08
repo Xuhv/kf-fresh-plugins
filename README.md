@@ -34,8 +34,8 @@ export function Button(props: JSX.HTMLAttributes<HTMLButtonElement>) {
 // fresh.config.ts
 import { defineConfig } from "$fresh/server.ts";
 import tailwind from "$fresh/plugins/tailwind.ts";
-import { cssModules } from "./plugins/cssModules.ts";
-import { injectCSS } from "./plugins/injectCss.ts";
+import { cssModules } from "https://deno.land/x/kf_fresh_plugins/plugins/cssModules.ts";
+import { injectCSS } from "https://deno.land/x/kf_fresh_plugins/plugins/injectCss.ts";
 import { resolve } from "$std/path/mod.ts";
 
 export default defineConfig({
