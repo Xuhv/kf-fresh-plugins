@@ -1,4 +1,4 @@
-import { type CSSModuleExports, Features, transform } from "npm:lightningcss"
+import { type CSSModuleExports, Features, transform } from "npm:lightningcss@1.24.1"
 import type { Plugin, PluginMiddleware } from "$fresh/server.ts"
 
 async function parseStyles(url: string): Promise<{ code: Uint8Array; exports: void | CSSModuleExports }> {

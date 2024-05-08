@@ -1,6 +1,6 @@
 # @kf/fresh-plugins
 
-Plugins for [fresh](https://fresh.deno.dev). I didn't publish this package yet, but you can copy it to your project or fork and publish it.
+Plugins for [fresh](https://fresh.deno.dev).
 
 #### [cssModules](./plugins/cssModules.ts)
 

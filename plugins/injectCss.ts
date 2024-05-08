@@ -1,5 +1,5 @@
 import type { Plugin } from "$fresh/server.ts"
-import { DOMParser, type Element } from "https://deno.land/x/deno_dom/deno-dom-wasm.ts"
+import { DOMParser, type Element } from "https://deno.land/x/deno_dom@v0.1.45/deno-dom-wasm.ts"
 import type { PluginRenderLink } from "$fresh/src/server/types.ts"
 
 /**
