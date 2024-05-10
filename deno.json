@@ -1,8 +1,9 @@
 {
   "name": "@kf/fresh-plugins",
-  "version": "1.0.0--alpha.1",
+  "version": "v1.0.0-beta.3",
   "exports": {
-    "./cssModules": "./plugins/cssModules.ts"
+    "./cssModules": "./plugins/cssModules.ts",
+    "./injectCss": "./plugins/injectCss.ts"
   },
   "publish": {
     "include": ["./plugins", "./README.md"]

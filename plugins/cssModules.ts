@@ -77,10 +77,12 @@ type CssModulesPluginOptions = {
   cssOutFile?: string
 }
 
+type CssModulesPlugin = Plugin & { produceModules: () => Promise<void> }
+
 /**
  * watch all [name].module.css files
  */
-export function cssModules({ tsOutDir, watchDir, cssOutFile, cssOutDir }: CssModulesPluginOptions): Plugin {
+export function cssModules({ tsOutDir, watchDir, cssOutFile, cssOutDir }: CssModulesPluginOptions): CssModulesPlugin {
   if (!cssOutFile === !cssOutDir) throw new Error("cssOutFile and cssOutDir can't be undefined or not undefined at the same time")
 
   const list = Array.from(Deno.readDirSync(watchDir))
@@ -126,13 +128,14 @@ export function cssModules({ tsOutDir, watchDir, cssOutFile, cssOutDir }: CssMod
     }
   }
 
-  const plugin: Plugin = {
+  const plugin: CssModulesPlugin = {
     name: "cssModules",
     middlewares: [cssModulesMiddleware],
     async buildStart() {
       watcher?.close()
       await produceModules()
-    }
+    },
+    produceModules
   }
 
   async function startWatch(watchDir: string, tsOutDir: string, cssOutDir?: string): Promise<void> {
