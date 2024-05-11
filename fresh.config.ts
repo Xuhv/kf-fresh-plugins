@@ -4,23 +4,17 @@ import { cssModules } from "./plugins/cssModules.ts"
 import { injectCSS } from "./plugins/injectCss.ts";
 import { resolve } from "$std/path/mod.ts";
 
-const css = cssModules({
+const cssModulesPlugin = cssModules({
   watchDir: resolve("./components"),
   tsOutDir: resolve("./components"),
-  // cssOutFile: resolve("./static/bundle.css")
   cssOutDir: resolve("./static"),
 })
 
-await css.produceModules()
+if (Deno.args.includes("build")) await cssModulesPlugin.produceModules()
 
 export default defineConfig({
   plugins: [
-    cssModules({
-      watchDir: resolve("./components"),
-      tsOutDir: resolve("./components"),
-      // cssOutFile: resolve("./static/bundle.css")
-      cssOutDir: resolve("./static"),
-    }),
+    cssModulesPlugin,
     injectCSS(),
     tailwind()
   ]
