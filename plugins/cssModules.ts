@@ -85,9 +85,21 @@ type CssModulesPlugin = Plugin & { produceModules: () => Promise<void> }
 export function cssModules({ tsOutDir, watchDir, cssOutFile, cssOutDir }: CssModulesPluginOptions): CssModulesPlugin {
   if (!cssOutFile === !cssOutDir) throw new Error("cssOutFile and cssOutDir can't be undefined or not undefined at the same time")
 
-  const list = Array.from(Deno.readDirSync(watchDir))
-    .filter(x => x.isFile && x.name.endsWith(".css"))
-    .map(x => joinPath(watchDir, x.name))
+  const list: string[] = []
+
+
+  function readDir(dir: string) {
+    const entries = Deno.readDirSync(dir)
+    for (const entry of entries) {
+      const path = joinPath(dir, entry.name)
+      if (entry.isDirectory) {
+        readDir(path)
+      } else if (entry.isFile && entry.name.endsWith(".css")) {
+        list.push(path)
+      }
+    }
+  }
+  readDir(watchDir)
 
   async function produceStylesheetResponse() {
     const code = await Promise.all(list.map(parseStyles))
